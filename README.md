@@ -5,12 +5,6 @@ ResumeAI analyzes resumes and returns a **score and actionable improvement tips*
 - **Resume parsing** via `/parse` (deterministic scoring from extracted fields)
 - **LLM-based resume analysis** via `/analyze` (prompt → model → validated JSON)
 
-
-## UI
-
-- **Landing page**: ![Landing page](assets/images/landingPage.png)
-- **Result page**: ![Result page](assets/images/resultPage.png)
-
 ## Architecture
 
 ### Frontend
