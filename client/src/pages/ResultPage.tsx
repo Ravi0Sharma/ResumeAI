@@ -4,6 +4,7 @@ import TipsList, { type ApiTip } from "../components/TipsList";
 
 interface LocationState {
   score: number;
+  maxScore: number;
   tips: ApiTip[];
   fileName: string;
 }
@@ -26,9 +27,9 @@ const ResultPage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">No resume processed yet</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Missing analysis data</h1>
           <p className="text-foreground-muted max-w-md mx-auto">
-            Upload your resume on the landing page to get started with the analysis.
+            The results view requires a completed API analysis response. Please upload and process a resume again.
           </p>
           <button
             onClick={handleGoBack}
@@ -41,7 +42,7 @@ const ResultPage = () => {
     );
   }
 
-  const { score, tips, fileName } = state;
+  const { score, maxScore, tips, fileName } = state;
 
   return (
     <div className="min-h-screen bg-noise relative">
@@ -67,7 +68,7 @@ const ResultPage = () => {
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Score card - takes 1 column on desktop */}
           <div className="lg:col-span-1 animate-fade-in-up-delay-1">
-            <ScoreCard score={score} />
+            <ScoreCard score={score} maxScore={maxScore} />
           </div>
           
           {/* Tips list - takes 2 columns on desktop */}

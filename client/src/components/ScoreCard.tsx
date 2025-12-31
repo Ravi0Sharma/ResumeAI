@@ -2,30 +2,16 @@ import { useEffect, useState } from "react";
 
 interface ScoreCardProps {
   score: number;
-  maxScore?: number;
+  maxScore: number;
 }
 
-const ScoreCard = ({ score, maxScore = 1000 }: ScoreCardProps) => {
+const ScoreCard = ({ score, maxScore }: ScoreCardProps) => {
   const [animatedWidth, setAnimatedWidth] = useState(0);
   const percentage = (score / maxScore) * 100;
   
   useEffect(() => {
     setAnimatedWidth(percentage);
   }, [percentage]);
-
-  const getVerdict = () => {
-    if (score >= 800) return { label: "Good", color: "bg-success text-success-foreground" };
-    if (score >= 550) return { label: "Medium", color: "bg-warning text-warning-foreground" };
-    return { label: "Needs Work", color: "bg-muted text-muted-foreground" };
-  };
-
-  const getProgressColor = () => {
-    if (score >= 800) return "bg-success shadow-glow-success";
-    if (score >= 550) return "bg-warning shadow-glow-warning";
-    return "bg-muted shadow-glow-muted";
-  };
-
-  const verdict = getVerdict();
 
   return (
     <div className="bg-gradient-card backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-card print-friendly">
@@ -37,9 +23,6 @@ const ScoreCard = ({ score, maxScore = 1000 }: ScoreCardProps) => {
             <span className="text-xl text-foreground-muted">/ {maxScore}</span>
           </div>
         </div>
-        <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${verdict.color}`}>
-          {verdict.label}
-        </span>
       </div>
       
       {/* Progress bar */}
@@ -53,7 +36,7 @@ const ScoreCard = ({ score, maxScore = 1000 }: ScoreCardProps) => {
           aria-label={`Resume score: ${score} out of ${maxScore}`}
         >
           <div 
-            className={`h-full rounded-full transition-all duration-1000 ease-out ${getProgressColor()}`}
+            className="h-full rounded-full transition-all duration-1000 ease-out bg-primary shadow-glow-primary"
             style={{ width: `${animatedWidth}%` }}
           />
         </div>

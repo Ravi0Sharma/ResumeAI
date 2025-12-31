@@ -57,11 +57,13 @@ const LandingPage = () => {
       }
 
       const score = (data as any).score.value as number;
+      const maxScore = (data as any).score.max as number;
       const tips = (data as any).tips as ApiTip[];
 
       navigate("/result", {
         state: {
           score,
+          maxScore,
           tips,
           fileName: selectedFile.name,
         },
