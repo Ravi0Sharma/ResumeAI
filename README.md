@@ -17,17 +17,22 @@ python -m nltk.downloader words
 
 ### Ollama + FastAPI (Docker)
 
-- Start Ollama on your host (macOS): `ollama serve` (or run the Ollama app)
+- Start the stack (Ollama + API + client):
+
+```bash
+docker-compose up --build
+```
+
+- Ensure the model exists (if needed):
+
+```bash
+docker compose exec ollama ollama pull html-model:latest
+```
+
 - Verify available tags:
 
 ```bash
 curl http://localhost:11434/api/tags
-```
-
-- Start the API:
-
-```bash
-docker-compose up --build
 ```
 
 - Test `/analyze`:
