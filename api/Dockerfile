@@ -5,10 +5,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Install API + parsing pipeline dependencies.
+# Build context is repo root (see docker-compose.yml), so paths are prefixed with `api/` and `backend/`.
+COPY api/requirements.txt /app/api-requirements.txt
+COPY backend/requirements.txt /app/backend-requirements.txt
+RUN pip install --no-cache-dir -r /app/api-requirements.txt -r /app/backend-requirements.txt \
+    && python -m spacy download en_core_web_sm \
+    && python -m nltk.downloader words
 
-COPY src /app/src
+COPY api/src /app/src
+COPY backend /app/backend
 
 EXPOSE 8000
 
