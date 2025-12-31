@@ -28,7 +28,14 @@ PROMPT_TEMPLATE = (
     "Svara ENDAST med giltig JSON.\n"
     "Inga förklaringar. Ingen text utanför JSON.\n\n"
     "### Input:\n"
-    "Match the resume to the job description and return structured JSON.\n\n"
+    "Match the resume to the job description and return structured JSON with this schema:\n"
+    "{\n"
+    '  "score": <integer 0-1000>,\n'
+    '  "tips": [\n'
+    '    {"id": <string>, "message": <string>, "severity": <"GOOD"|"WARNING"|"NEEDS_WORK">}\n'
+    "  ],\n"
+    '  "analysis": <object>\n'
+    "}\n\n"
     "Resume:\n"
     "{{RESUME_TEXT}}\n\n"
     "Job Description:\n"
@@ -94,56 +101,6 @@ def _ollama_generate(prompt: str) -> str:
     return body
 
 
-def _is_nonempty(value) -> bool:
-    if value is None:
-        return False
-    if isinstance(value, str):
-        return bool(value.strip())
-    if isinstance(value, (list, tuple, set)):
-        return any(_is_nonempty(v) for v in value)
-    if isinstance(value, dict):
-        return any(_is_nonempty(v) for v in value.values())
-    return True
-
-
-def _find_field_value(obj, field_names_lower: set[str]):
-    """
-    Recursively search dict/list structures for a key matching field_names_lower.
-    Returns the first matching value found, else None.
-    """
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            if isinstance(k, str) and k.strip().lower() in field_names_lower:
-                return v
-            found = _find_field_value(v, field_names_lower)
-            if found is not None:
-                return found
-    elif isinstance(obj, list):
-        for item in obj:
-            found = _find_field_value(item, field_names_lower)
-            if found is not None:
-                return found
-    return None
-
-
-def _build_tips_from_model_json(model_json: dict) -> list[dict]:
-    """
-    Generate tips based on presence/absence of common resume sections.
-    """
-    tips = []
-    checks = [
-        ({"certifications", "certification", "certs"}, "certifications", "Add Certifications"),
-        ({"achievements", "achievement", "accomplishments"}, "achievements", "Add Achievements"),
-        ({"interests", "interest"}, "interests", "Add Interests"),
-        ({"hobbies", "hobby"}, "hobbies", "Add Hobbies"),
-    ]
-    for keys, tip_id, message in checks:
-        value = _find_field_value(model_json, {k.lower() for k in keys})
-        if not _is_nonempty(value):
-            tips.append({"id": tip_id, "message": message, "severity": "NEEDS_WORK"})
-    return tips
-
-
 @router.post("/analyze")
 async def analyze(req: AnalyzeRequest):
     cv_text = (req.cv_text or "").strip()
@@ -168,8 +125,27 @@ async def analyze(req: AnalyzeRequest):
                 status_code=502,
                 content={"ok": False, "error": {"code": "INVALID_MODEL_OUTPUT"}},
             )
-        tips = _build_tips_from_model_json(model_json if isinstance(model_json, dict) else {})
-        return {"ok": True, "raw": raw, "tips": tips}
+        if not isinstance(model_json, dict):
+            return _error("INVALID_MODEL_OUTPUT", "Expected JSON object", status_code=502)
+
+        score = model_json.get("score")
+        tips = model_json.get("tips")
+
+        if not isinstance(score, int) or score < 0 or score > 1000:
+            return _error("INVALID_MODEL_OUTPUT", "Invalid score", details={"score": score}, status_code=502)
+
+        if not isinstance(tips, list) or not all(isinstance(t, dict) for t in tips):
+            return _error("INVALID_MODEL_OUTPUT", "Invalid tips", details={"tips": tips}, status_code=502)
+
+        for tip in tips:
+            if not isinstance(tip.get("id"), str) or not isinstance(tip.get("message"), str) or not isinstance(tip.get("severity"), str):
+                return _error("INVALID_MODEL_OUTPUT", "Invalid tip shape", details={"tip": tip}, status_code=502)
+
+        analysis = model_json.get("analysis")
+        if analysis is not None and not isinstance(analysis, dict):
+            return _error("INVALID_MODEL_OUTPUT", "Invalid analysis", details={"analysis": analysis}, status_code=502)
+
+        return {"ok": True, "score": score, "tips": tips, "analysis": analysis}
     except RuntimeError as e:
         code = e.args[0] if len(e.args) > 0 else "OLLAMA_ERROR"
         details = e.args[1] if len(e.args) > 1 else None
