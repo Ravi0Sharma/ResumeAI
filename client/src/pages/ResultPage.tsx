@@ -1,15 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import ScoreCard from "../components/ScoreCard";
-import TipsList from "../components/TipsList";
-
-interface Tip {
-  text: string;
-  status: "good" | "medium" | "bad";
-}
+import TipsList, { type ApiTip } from "../components/TipsList";
 
 interface LocationState {
   score: number;
-  tips: Tip[];
+  tips: ApiTip[];
   fileName: string;
 }
 

@@ -116,3 +116,4 @@ def test_normalize_types_exact():
     assert isinstance(result["company_names"], list)
     assert isinstance(result["no_of_pages"], int)
 
+
