@@ -25,3 +25,4 @@ def get_settings() -> Settings:
     return Settings(ollama_url=ollama_url, ollama_model=ollama_model)
 
 
+

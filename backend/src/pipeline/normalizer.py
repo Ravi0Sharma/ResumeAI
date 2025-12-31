@@ -88,3 +88,4 @@ def normalize_extracted_data(data: dict) -> dict:
     
     return normalized
 
+

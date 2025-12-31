@@ -8,3 +8,4 @@ services:
       - OLLAMA_MODEL=html-model:latest
 
 
+

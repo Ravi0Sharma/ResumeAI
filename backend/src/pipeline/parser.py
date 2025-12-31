@@ -37,3 +37,4 @@ def parse_resume(file_path: str) -> dict:
     except Exception as e:
         raise ValueError(f"Error parsing resume: {str(e)}") from e
 
+

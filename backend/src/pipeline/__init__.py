@@ -5,3 +5,4 @@ from .normalizer import normalize_extracted_data
 
 __all__ = ["parse_resume", "normalize_extracted_data"]
 
+
