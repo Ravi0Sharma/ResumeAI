@@ -10,10 +10,7 @@ const ScoreCard = ({ score, maxScore = 1000 }: ScoreCardProps) => {
   const percentage = (score / maxScore) * 100;
   
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAnimatedWidth(percentage);
-    }, 100);
-    return () => clearTimeout(timer);
+    setAnimatedWidth(percentage);
   }, [percentage]);
 
   const getVerdict = () => {
