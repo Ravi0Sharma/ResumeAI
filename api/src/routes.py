@@ -16,6 +16,97 @@ router = APIRouter()
 
 ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_SCORE = 1000
+
+
+def _compute_score_and_tips_from_normalized_resume(normalized: dict) -> tuple[int, list[dict]]:
+    """
+    Deterministically compute score + tips from parsed resume content.
+
+    This MUST be driven only by extracted resume data (no mocks/randomness).
+    """
+    def _count_list(key: str) -> int:
+        v = normalized.get(key)
+        if isinstance(v, list):
+            return len([x for x in v if isinstance(x, str) and x.strip()])
+        return 0
+
+    def _has_str(key: str) -> bool:
+        v = normalized.get(key)
+        return isinstance(v, str) and bool(v.strip())
+
+    tips: list[dict] = []
+
+    # Presence checks
+    if not _has_str("name"):
+        tips.append({"id": "name", "message": "Missing name", "severity": "NEEDS_WORK"})
+    if not _has_str("email"):
+        tips.append({"id": "email", "message": "Missing email", "severity": "NEEDS_WORK"})
+    if not _has_str("mobile_number"):
+        tips.append({"id": "mobile_number", "message": "Missing phone number", "severity": "NEEDS_WORK"})
+
+    skills_count = _count_list("skills")
+    if skills_count < 5:
+        tips.append(
+            {
+                "id": "skills",
+                "message": f"Low skills coverage (found {skills_count})",
+                "severity": "WARNING" if skills_count >= 3 else "NEEDS_WORK",
+            }
+        )
+
+    degree_count = _count_list("degree")
+    if degree_count == 0:
+        tips.append({"id": "education", "message": "Education not detected", "severity": "WARNING"})
+
+    company_count = _count_list("company_names")
+    if company_count == 0:
+        tips.append({"id": "experience", "message": "Work experience not detected", "severity": "WARNING"})
+
+    total_experience = normalized.get("total_experience")
+    if total_experience is None:
+        tips.append({"id": "total_experience", "message": "Total experience not detected", "severity": "WARNING"})
+
+    pages = normalized.get("no_of_pages")
+    if isinstance(pages, int) and pages > 2:
+        tips.append({"id": "length", "message": f"Resume is {pages} pages (consider shortening)", "severity": "WARNING"})
+
+    # Score is computed from field completeness + skills density.
+    weights = {
+        "name": 1.0,
+        "email": 1.0,
+        "mobile_number": 1.0,
+        "skills": 2.0,
+        "education": 1.0,
+        "experience": 1.0,
+        "total_experience": 1.0,
+        "length": 0.5,
+    }
+
+    earned = 0.0
+    possible = sum(weights.values())
+
+    earned += weights["name"] if _has_str("name") else 0.0
+    earned += weights["email"] if _has_str("email") else 0.0
+    earned += weights["mobile_number"] if _has_str("mobile_number") else 0.0
+
+    earned += weights["education"] if degree_count > 0 else 0.0
+    earned += weights["experience"] if company_count > 0 else 0.0
+    earned += weights["total_experience"] if total_experience is not None else 0.0
+
+    # Skills: scale up to 10 skills, then cap.
+    earned += weights["skills"] * min(1.0, skills_count / 10.0)
+
+    # Length: 1.0 if <=2 pages, 0.5 if unknown, 0.0 if >2 pages.
+    if isinstance(pages, int):
+        earned += weights["length"] if pages <= 2 else 0.0
+    else:
+        earned += weights["length"] * 0.5
+
+    score = int(round(MAX_SCORE * (earned / possible))) if possible > 0 else 0
+    score = max(0, min(MAX_SCORE, score))
+
+    return score, tips
 
 
 class AnalyzeRequest(BaseModel):
@@ -28,7 +119,14 @@ PROMPT_TEMPLATE = (
     "Svara ENDAST med giltig JSON.\n"
     "Inga förklaringar. Ingen text utanför JSON.\n\n"
     "### Input:\n"
-    "Match the resume to the job description and return structured JSON.\n\n"
+    "Match the resume to the job description and return structured JSON with this schema:\n"
+    "{\n"
+    '  "score": <integer 0-1000>,\n'
+    '  "tips": [\n'
+    '    {"id": <string>, "message": <string>, "severity": <"GOOD"|"WARNING"|"NEEDS_WORK">}\n'
+    "  ],\n"
+    '  "analysis": <object>\n'
+    "}\n\n"
     "Resume:\n"
     "{{RESUME_TEXT}}\n\n"
     "Job Description:\n"
@@ -94,56 +192,6 @@ def _ollama_generate(prompt: str) -> str:
     return body
 
 
-def _is_nonempty(value) -> bool:
-    if value is None:
-        return False
-    if isinstance(value, str):
-        return bool(value.strip())
-    if isinstance(value, (list, tuple, set)):
-        return any(_is_nonempty(v) for v in value)
-    if isinstance(value, dict):
-        return any(_is_nonempty(v) for v in value.values())
-    return True
-
-
-def _find_field_value(obj, field_names_lower: set[str]):
-    """
-    Recursively search dict/list structures for a key matching field_names_lower.
-    Returns the first matching value found, else None.
-    """
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            if isinstance(k, str) and k.strip().lower() in field_names_lower:
-                return v
-            found = _find_field_value(v, field_names_lower)
-            if found is not None:
-                return found
-    elif isinstance(obj, list):
-        for item in obj:
-            found = _find_field_value(item, field_names_lower)
-            if found is not None:
-                return found
-    return None
-
-
-def _build_tips_from_model_json(model_json: dict) -> list[dict]:
-    """
-    Generate tips based on presence/absence of common resume sections.
-    """
-    tips = []
-    checks = [
-        ({"certifications", "certification", "certs"}, "certifications", "Add Certifications"),
-        ({"achievements", "achievement", "accomplishments"}, "achievements", "Add Achievements"),
-        ({"interests", "interest"}, "interests", "Add Interests"),
-        ({"hobbies", "hobby"}, "hobbies", "Add Hobbies"),
-    ]
-    for keys, tip_id, message in checks:
-        value = _find_field_value(model_json, {k.lower() for k in keys})
-        if not _is_nonempty(value):
-            tips.append({"id": tip_id, "message": message, "severity": "NEEDS_WORK"})
-    return tips
-
-
 @router.post("/analyze")
 async def analyze(req: AnalyzeRequest):
     cv_text = (req.cv_text or "").strip()
@@ -168,8 +216,27 @@ async def analyze(req: AnalyzeRequest):
                 status_code=502,
                 content={"ok": False, "error": {"code": "INVALID_MODEL_OUTPUT"}},
             )
-        tips = _build_tips_from_model_json(model_json if isinstance(model_json, dict) else {})
-        return {"ok": True, "raw": raw, "tips": tips}
+        if not isinstance(model_json, dict):
+            return _error("INVALID_MODEL_OUTPUT", "Expected JSON object", status_code=502)
+
+        score = model_json.get("score")
+        tips = model_json.get("tips")
+
+        if not isinstance(score, int) or score < 0 or score > 1000:
+            return _error("INVALID_MODEL_OUTPUT", "Invalid score", details={"score": score}, status_code=502)
+
+        if not isinstance(tips, list) or not all(isinstance(t, dict) for t in tips):
+            return _error("INVALID_MODEL_OUTPUT", "Invalid tips", details={"tips": tips}, status_code=502)
+
+        for tip in tips:
+            if not isinstance(tip.get("id"), str) or not isinstance(tip.get("message"), str) or not isinstance(tip.get("severity"), str):
+                return _error("INVALID_MODEL_OUTPUT", "Invalid tip shape", details={"tip": tip}, status_code=502)
+
+        analysis = model_json.get("analysis")
+        if analysis is not None and not isinstance(analysis, dict):
+            return _error("INVALID_MODEL_OUTPUT", "Invalid analysis", details={"analysis": analysis}, status_code=502)
+
+        return {"ok": True, "score": score, "tips": tips, "analysis": analysis}
     except RuntimeError as e:
         code = e.args[0] if len(e.args) > 0 else "OLLAMA_ERROR"
         details = e.args[1] if len(e.args) > 1 else None
@@ -250,10 +317,14 @@ async def parse_resume_endpoint(file: UploadFile = File(...)):
 
             raw_data = parse_resume(temp_path)
             normalized_data = normalize_extracted_data(raw_data)
+
+            score, tips = _compute_score_and_tips_from_normalized_resume(normalized_data)
             
             return {
                 "ok": True,
-                "data": normalized_data
+                "data": normalized_data,
+                "score": {"value": score, "max": MAX_SCORE},
+                "tips": tips,
             }
         except FileNotFoundError as e:
             return JSONResponse(

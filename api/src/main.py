@@ -1,7 +1,17 @@
 """FastAPI application for resume parsing API."""
 
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Ensure the repository root (containing `backend/`) is importable regardless of
+# where uvicorn is started from (prevents PIPELINE_UNAVAILABLE in /parse).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if (_REPO_ROOT / "backend").exists():
+    sys.path.insert(0, str(_REPO_ROOT))
+
 from .routes import router
 
 app = FastAPI(title="ResumeAI API", version="1.0.0")

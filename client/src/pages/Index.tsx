@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { extractResumeText } from "../lib/extractResumeText";
 import type { ApiTip } from "../components/TipsList";
 
 const LandingPage = () => {
@@ -32,32 +31,40 @@ const LandingPage = () => {
     setIsProcessing(true);
 
     try {
-      const cvText = await extractResumeText(selectedFile);
+      const formData = new FormData();
+      formData.append("file", selectedFile, selectedFile.name);
 
-      const res = await fetch("http://localhost:8000/analyze", {
+      // API is the single source of truth for score + tips. We only upload the resume file.
+      const res = await fetch("http://localhost:8000/parse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cv_text: cvText,
-          job_text: "N/A",
-        }),
+        body: formData,
       });
 
       const data = (await res.json()) as
-        | { ok: true; raw: string; tips?: ApiTip[] }
+        | { ok: true; score: { value: number; max: number }; tips: ApiTip[]; data: unknown }
         | { ok: false; error?: { code?: string; message?: string } };
 
       if (!data || data.ok !== true) {
-        const code = (data as any)?.error?.code || "ANALYZE_FAILED";
+        const code = (data as any)?.error?.code || "PARSE_FAILED";
         throw new Error(code);
       }
 
-      const tips = Array.isArray(data.tips) ? data.tips : [];
-      const score = Math.max(0, 1000 - tips.length * 50);
+      if (
+        typeof (data as any)?.score?.value !== "number" ||
+        typeof (data as any)?.score?.max !== "number" ||
+        !Array.isArray((data as any)?.tips)
+      ) {
+        throw new Error("INVALID_API_RESPONSE");
+      }
+
+      const score = (data as any).score.value as number;
+      const maxScore = (data as any).score.max as number;
+      const tips = (data as any).tips as ApiTip[];
 
       navigate("/result", {
         state: {
           score,
+          maxScore,
           tips,
           fileName: selectedFile.name,
         },
