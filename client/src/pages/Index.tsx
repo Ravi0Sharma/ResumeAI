@@ -44,7 +44,7 @@ const LandingPage = () => {
       });
 
       const data = (await res.json()) as
-        | { ok: true; raw: string; tips?: ApiTip[] }
+        | { ok: true; score: number; tips: ApiTip[]; raw?: string }
         | { ok: false; error?: { code?: string; message?: string } };
 
       if (!data || data.ok !== true) {
@@ -52,8 +52,12 @@ const LandingPage = () => {
         throw new Error(code);
       }
 
-      const tips = Array.isArray(data.tips) ? data.tips : [];
-      const score = Math.max(0, 1000 - tips.length * 50);
+      if (typeof (data as any)?.score !== "number" || !Array.isArray((data as any)?.tips)) {
+        throw new Error("INVALID_API_RESPONSE");
+      }
+
+      const score = (data as any).score as number;
+      const tips = (data as any).tips as ApiTip[];
 
       navigate("/result", {
         state: {
