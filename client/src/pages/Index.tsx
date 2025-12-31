@@ -1,5 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { extractResumeText } from "../lib/extractResumeText";
+import type { ApiTip } from "../components/TipsList";
 
 const LandingPage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -24,38 +26,48 @@ const LandingPage = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
-  const handleProcess = () => {
+  const handleProcess = async () => {
     if (!selectedFile) return;
     
     setIsProcessing(true);
-    
-    // Simulate processing
-    const processingTime = 900 + Math.random() * 500;
-    setTimeout(() => {
-      // Generate mock data
-      const mockScore = 550 + Math.floor(Math.random() * 300);
-      const mockTips = [
-        { text: "You added Objective/Summary", status: "good" as const },
-        { text: "Education details present", status: "good" as const },
-        { text: "Experience added", status: "good" as const },
-        { text: "Skills added", status: "good" as const },
-        { text: "Projects added", status: "good" as const },
-        { text: "Contact information complete", status: "medium" as const },
-        { text: "Consider adding more keywords", status: "medium" as const },
-        { text: "Add Certifications to strengthen your profile", status: "bad" as const },
-        { text: "Add Achievements to stand out", status: "bad" as const },
-        { text: "Add Interests to show personality", status: "bad" as const },
-        { text: "Add Hobbies to appear well-rounded", status: "bad" as const },
-      ];
-      
-      navigate("/result", { 
-        state: { 
-          score: mockScore, 
-          tips: mockTips,
-          fileName: selectedFile.name 
-        } 
+
+    try {
+      const cvText = await extractResumeText(selectedFile);
+
+      const res = await fetch("http://localhost:8000/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cv_text: cvText,
+          job_text: "N/A",
+        }),
       });
-    }, processingTime);
+
+      const data = (await res.json()) as
+        | { ok: true; raw: string; tips?: ApiTip[] }
+        | { ok: false; error?: { code?: string; message?: string } };
+
+      if (!data || data.ok !== true) {
+        const code = (data as any)?.error?.code || "ANALYZE_FAILED";
+        throw new Error(code);
+      }
+
+      const tips = Array.isArray(data.tips) ? data.tips : [];
+      const score = Math.max(0, 1000 - tips.length * 50);
+
+      navigate("/result", {
+        state: {
+          score,
+          tips,
+          fileName: selectedFile.name,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to analyze resume. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

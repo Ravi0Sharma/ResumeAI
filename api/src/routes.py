@@ -94,6 +94,56 @@ def _ollama_generate(prompt: str) -> str:
     return body
 
 
+def _is_nonempty(value) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set)):
+        return any(_is_nonempty(v) for v in value)
+    if isinstance(value, dict):
+        return any(_is_nonempty(v) for v in value.values())
+    return True
+
+
+def _find_field_value(obj, field_names_lower: set[str]):
+    """
+    Recursively search dict/list structures for a key matching field_names_lower.
+    Returns the first matching value found, else None.
+    """
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(k, str) and k.strip().lower() in field_names_lower:
+                return v
+            found = _find_field_value(v, field_names_lower)
+            if found is not None:
+                return found
+    elif isinstance(obj, list):
+        for item in obj:
+            found = _find_field_value(item, field_names_lower)
+            if found is not None:
+                return found
+    return None
+
+
+def _build_tips_from_model_json(model_json: dict) -> list[dict]:
+    """
+    Generate tips based on presence/absence of common resume sections.
+    """
+    tips = []
+    checks = [
+        ({"certifications", "certification", "certs"}, "certifications", "Add Certifications"),
+        ({"achievements", "achievement", "accomplishments"}, "achievements", "Add Achievements"),
+        ({"interests", "interest"}, "interests", "Add Interests"),
+        ({"hobbies", "hobby"}, "hobbies", "Add Hobbies"),
+    ]
+    for keys, tip_id, message in checks:
+        value = _find_field_value(model_json, {k.lower() for k in keys})
+        if not _is_nonempty(value):
+            tips.append({"id": tip_id, "message": message, "severity": "NEEDS_WORK"})
+    return tips
+
+
 @router.post("/analyze")
 async def analyze(req: AnalyzeRequest):
     cv_text = (req.cv_text or "").strip()
@@ -112,13 +162,14 @@ async def analyze(req: AnalyzeRequest):
         raw = _ollama_generate(prompt)
         raw = (raw or "").strip()
         try:
-            json.loads(raw)
+            model_json = json.loads(raw)
         except Exception:
             return JSONResponse(
                 status_code=502,
                 content={"ok": False, "error": {"code": "INVALID_MODEL_OUTPUT"}},
             )
-        return {"ok": True, "raw": raw}
+        tips = _build_tips_from_model_json(model_json if isinstance(model_json, dict) else {})
+        return {"ok": True, "raw": raw, "tips": tips}
     except RuntimeError as e:
         code = e.args[0] if len(e.args) > 0 else "OLLAMA_ERROR"
         details = e.args[1] if len(e.args) > 1 else None
