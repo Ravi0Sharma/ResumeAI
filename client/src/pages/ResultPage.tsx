@@ -13,6 +13,7 @@ const ResultPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as LocationState | null;
+  // `state` is produced by the upload flow after the API returns score + tips.
 
   const handleGoBack = () => {
     navigate("/");

@@ -34,6 +34,7 @@ const LandingPage = () => {
       const formData = new FormData();
       formData.append("file", selectedFile, selectedFile.name);
 
+      // API is the single source of truth for score + tips. We only upload the resume file.
       const res = await fetch("http://localhost:8000/parse", {
         method: "POST",
         body: formData,
@@ -44,7 +45,7 @@ const LandingPage = () => {
         | { ok: false; error?: { code?: string; message?: string } };
 
       if (!data || data.ok !== true) {
-        const code = (data as any)?.error?.code || "ANALYZE_FAILED";
+        const code = (data as any)?.error?.code || "PARSE_FAILED";
         throw new Error(code);
       }
 
