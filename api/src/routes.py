@@ -23,6 +23,26 @@ class AnalyzeRequest(BaseModel):
     job_text: str
 
 
+PROMPT_TEMPLATE = (
+    "Du är en resume analyzer.\n"
+    "Svara ENDAST med giltig JSON.\n"
+    "Inga förklaringar. Ingen text utanför JSON.\n\n"
+    "### Input:\n"
+    "Match the resume to the job description and return structured JSON.\n\n"
+    "Resume:\n"
+    "{{RESUME_TEXT}}\n\n"
+    "Job Description:\n"
+    "{{JOB_TEXT}}\n\n"
+    "### Output:\n"
+)
+
+
+def build_prompt(resume_text: str, job_text: str) -> str:
+    return (
+        PROMPT_TEMPLATE.replace("{{RESUME_TEXT}}", resume_text).replace("{{JOB_TEXT}}", job_text)
+    )
+
+
 def _error(code: str, message: str, *, details=None, status_code: int = 500) -> JSONResponse:
     payload = {"ok": False, "error": {"code": code, "message": message}}
     if details is not None:
@@ -86,16 +106,18 @@ async def analyze(req: AnalyzeRequest):
             status_code=400,
         )
 
-    prompt = (
-        "Svara ENDAST med giltig JSON.\n\n"
-        "### Input:\n"
-        f"{cv_text}\n\n"
-        f"{job_text}\n\n"
-        "### Output:\n"
-    )
+    prompt = build_prompt(cv_text, job_text)
 
     try:
         raw = _ollama_generate(prompt)
+        raw = (raw or "").strip()
+        try:
+            json.loads(raw)
+        except Exception:
+            return JSONResponse(
+                status_code=502,
+                content={"ok": False, "error": {"code": "INVALID_MODEL_OUTPUT"}},
+            )
         return {"ok": True, "raw": raw}
     except RuntimeError as e:
         code = e.args[0] if len(e.args) > 0 else "OLLAMA_ERROR"
