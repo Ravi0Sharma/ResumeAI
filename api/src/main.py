@@ -27,5 +27,5 @@ app.include_router(router)
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "ok", "service": "resume-analyzer-api"}
+    return {"ok": True}
 
