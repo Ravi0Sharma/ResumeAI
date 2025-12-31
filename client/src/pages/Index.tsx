@@ -80,7 +80,7 @@ const LandingPage = () => {
             <div className="animate-fade-in-up-delay-1">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-light border border-border text-sm text-foreground-muted">
                 <span className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
-                AI Resume Insights  
+                Smarter resumes start here 
               </span>
             </div>
 
@@ -91,7 +91,7 @@ const LandingPage = () => {
                 <span className="text-primary">AI precision</span>
               </h1>
               <p className="text-lg text-foreground-muted max-w-lg">
-                Get instant feedback on your resume. Our AI analyzes your content and provides actionable tips to help you land your dream job.
+                Get instant AI-powered feedback on your resume. Receive clear, actionable insights to improve your chances of getting hire
               </p>
             </div>
 
