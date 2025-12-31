@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { extractResumeText } from "../lib/extractResumeText";
 import type { ApiTip } from "../components/TipsList";
 
 const LandingPage = () => {
@@ -32,19 +31,16 @@ const LandingPage = () => {
     setIsProcessing(true);
 
     try {
-      const cvText = await extractResumeText(selectedFile);
+      const formData = new FormData();
+      formData.append("file", selectedFile, selectedFile.name);
 
-      const res = await fetch("http://localhost:8000/analyze", {
+      const res = await fetch("http://localhost:8000/parse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cv_text: cvText,
-          job_text: "N/A",
-        }),
+        body: formData,
       });
 
       const data = (await res.json()) as
-        | { ok: true; score: number; tips: ApiTip[]; raw?: string }
+        | { ok: true; score: { value: number; max: number }; tips: ApiTip[]; data: unknown }
         | { ok: false; error?: { code?: string; message?: string } };
 
       if (!data || data.ok !== true) {
@@ -52,11 +48,15 @@ const LandingPage = () => {
         throw new Error(code);
       }
 
-      if (typeof (data as any)?.score !== "number" || !Array.isArray((data as any)?.tips)) {
+      if (
+        typeof (data as any)?.score?.value !== "number" ||
+        typeof (data as any)?.score?.max !== "number" ||
+        !Array.isArray((data as any)?.tips)
+      ) {
         throw new Error("INVALID_API_RESPONSE");
       }
 
-      const score = (data as any).score as number;
+      const score = (data as any).score.value as number;
       const tips = (data as any).tips as ApiTip[];
 
       navigate("/result", {
