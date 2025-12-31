@@ -1,9 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
-/* =========================
-   THEME TOKENS (Tailwind v4)
-   ========================= */
 @theme {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -36,9 +33,17 @@
   --radius: var(--radius);
 }
 
-/* =========================
-   BASE
-   ========================= */
+@theme {
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-needswork: hsl(var(--muted));
+  --color-needswork-foreground: hsl(var(--muted-foreground));
+}
+
 @layer base {
   :root {
     /* Background gradient colors */
@@ -124,9 +129,6 @@
   }
 }
 
-/* =========================
-   UTILITIES
-   ========================= */
 @layer utilities {
   /* Main gradient background (v3 had bg-gradient-main) */
   .bg-gradient-main {
@@ -232,9 +234,6 @@
   }
 }
 
-/* =========================
-   KEYFRAMES
-   ========================= */
 @keyframes fade-in-up {
   from {
     opacity: 0;

@@ -80,7 +80,7 @@ const LandingPage = () => {
             <div className="animate-fade-in-up-delay-1">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-light border border-border text-sm text-foreground-muted">
                 <span className="w-2 h-2 rounded-full bg-success animate-pulse-glow" />
-                Smarter resumes start here
+                AI Resume Insights  
               </span>
             </div>
 
