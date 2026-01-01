@@ -8,8 +8,8 @@ The frontend is built with **React (Vite)** and the **API** is a **FastAPI** ser
 
 ## Screenshots
 
-- **Landing page**: ![Landing page](assets/imageslandingPage)
-- **Result page**: ![Result page](assets/images/resultPage)
+- **Landing page**: ![Landing page](assets/imageslandingPage.png)
+- **Result page**: ![Result page](assets/images/resultPage.png)
 
 ## Architecture
 
