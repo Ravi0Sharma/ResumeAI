@@ -3,7 +3,7 @@
 ResumeAI analyzes resumes and returns a **score and actionable improvement tips** through two pipelines:
 
 - **Resume parsing** via `/parse` (deterministic scoring from extracted fields)
-- **LLM-based matching** between resume and job description via `/analyze` (prompt → model → validated JSON)
+- **LLM-based resume analysis** via `/analyze` (prompt → model → validated JSON)
 
 
 ## UI
