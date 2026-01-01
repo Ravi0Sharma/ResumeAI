@@ -6,9 +6,9 @@ The frontend is built with **React (Vite)** and the **API** is a **FastAPI** ser
 - **Parse resume files** via `/parse` (deterministic scoring from extracted fields)
 - **Run LLM-based matching** between resume + job description via `/analyze` (prompt → model → validated JSON)
 
-## Screenshots
+## UI
 
-- **Landing page**: ![Landing page](assets/imageslandingPage.png)
+- **Landing page**: ![Landing page](assets/images/landingPage.png)
 - **Result page**: ![Result page](assets/images/resultPage.png)
 
 ## Architecture
