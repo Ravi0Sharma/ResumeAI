@@ -1,7 +1,7 @@
 # ResumeAI
 
 ResumeAI analyzes resumes and returns a **score and actionable improvement tips**.
-The frontend is built with **React (Vite)** and the backend is a **FastAPI** server that can:
+The frontend is built with **React (Vite)** and the **API** is a **FastAPI** server that can:
 
 - **Parse resume files** via `/parse` (deterministic scoring from extracted fields)
 - **Run LLM-based matching** between resume + job description via `/analyze` (prompt → model → validated JSON)
@@ -11,25 +11,32 @@ The frontend is built with **React (Vite)** and the backend is a **FastAPI** ser
 - **Landing page**: `![Landing page](<ADD_LANDING_IMAGE_URL_HERE>)`
 - **Result page**: `![Result page](<ADD_RESULT_IMAGE_URL_HERE>)`
 
-## Architecture (quick)
+## Architecture
 
-### Frontend (React / Vite)
+### Frontend
 
-- Uploads a resume (PDF/DOC/DOCX) to the API (`POST /parse`)
+- Uploads a resume (PDF/DOCX) to the API (`POST /parse`)  
 - Displays the **score** and **tips** on the result view
 
-### Backend
+### API + backend domain logic
 
 There are two main flows:
 
 - **`POST /parse`**: accepts a file (multipart), extracts text and normalizes fields → computes **score + tips deterministically**
-- **`POST /analyze`**: accepts `cv_text` + `job_text`, builds a prompt, calls **Ollama**, and requires the model to return **pure JSON** following a schema
+- **`POST /analyze`**: accepts `cv_text` + `job_text`, builds a prompt, calls **Ollama** and requires the model to return **pure JSON** following a schema
 
-## API: prompt → score pipeline (`/analyze`)
+## Scoring
+
+`/parse` returns a deterministic **score (0–1000)** plus improvement tips from normalized resume fields
+
+- **Core checks**: contact info, skills coverage, education, work experience, total experience and length (pages)
+- **Quality heuristics**: quantified impact in experience, skills grouping vs flat list, education↔experience balance and summary/headline presence
+- **Tip severities**: `GOOD` (keep), `WARNING` (improve), `NEEDS_WORK` (missing/critical)
+
+## API: prompt → model → validation pipeline (`/analyze`)
 
 Pipeline at a glance:
-
-- The API builds a prompt that forces the model to respond with **valid JSON**: `score (0–1000)`, `tips[]`, and optional `analysis`.
+- The backend LLM service builds a prompt that forces the model to respond with **valid JSON**: `score (0–1000)`, `tips[]` and optional `analysis`.
 - The API calls Ollama at `POST /api/generate` with `model` from `OLLAMA_MODEL`.
 - The response is **parsed as JSON** and validated (score range, tip shape). If output is invalid, the API returns an error (`INVALID_MODEL_OUTPUT`).
 
@@ -37,9 +44,9 @@ Pipeline at a glance:
 
 This is the setup used for the model in this project:
 
-- **Data**: **synthetically generated data** (synthetic resumes + job descriptions + labels/tips) to iterate quickly without personal data.
-- **Training**: **Google Colab** (GPU).
-- **Fine-tuning**: **Unsloth**.
+- **Data**: **synthetically generated data** (synthetic resumes + job descriptions + labels/tips) to iterate quickly without personal data
+- **Training**: **Google Colab** (GPU)
+- **Fine-tuning**: **Unsloth**
 - **Base model** (starting point):
 
 ```python
@@ -55,7 +62,7 @@ After training, the model can be exported and run locally via **Ollama**
 Everything runs in containers via Docker Compose:
 
 - **`ollama`**: runs the model (persistent volume)
-- **`api`**: FastAPI (talks to `ollama` over the internal Docker network)
+- **`api`**: Talks to `ollama` over the internal Docker network
 - **`client`**: Vite dev server
 
 Start everything:
@@ -74,4 +81,3 @@ Endpoints:
 ## File formats
 
 - **`/parse`** effectively supports **PDF + DOCX** (text extraction via `pdfminer` and `python-docx`).
-- `.doc` is listed as allowed by the API, but the current parser does not handle `.doc` (you’d need to add an additional extractor).
