@@ -1,10 +1,10 @@
 # ResumeAI
 
-ResumeAI analyzes resumes and returns a **score and actionable improvement tips**.
-The frontend is built with **React (Vite)** and the **API** is a **FastAPI** server that can:
+ResumeAI analyzes resumes and returns a **score and actionable improvement tips** through two pipelines:
 
-- **Parse resume files** via `/parse` (deterministic scoring from extracted fields)
-- **Run LLM-based matching** between resume + job description via `/analyze` (prompt → model → validated JSON)
+- **Resume parsing** via `/parse` (deterministic scoring from extracted fields)
+- **LLM-based matching** between resume and job description via `/analyze` (prompt → model → validated JSON)
+
 
 ## UI
 
@@ -18,7 +18,7 @@ The frontend is built with **React (Vite)** and the **API** is a **FastAPI** ser
 - Uploads a resume (PDF/DOCX) to the API (`POST /parse`)  
 - Displays the **score** and **tips** on the result view
 
-### API + backend domain logic
+### API + backend logic
 
 There are two main flows:
 
