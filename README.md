@@ -1,66 +1,66 @@
 # ResumeAI
 
-ResumeAI är ett fullstack-projekt som analyserar CV:n och ger ett **score + konkreta förbättringstips**.
-Frontend är byggd i **React (Vite)** och backend är en **FastAPI**-server som både kan:
+ResumeAI is a fullstack project that analyzes resumes and returns a **score + actionable improvement tips**.
+The frontend is built with **React (Vite)** and the backend is a **FastAPI** server that can:
 
-- **Parsa CV-filer** via `/parse` (deterministisk scoring från extraherad data)
-- **Köra LLM-baserad matchning** mellan CV + jobbannons via `/analyze` (prompt → modell → validerad JSON)
+- **Parse resume files** via `/parse` (deterministic scoring from extracted fields)
+- **Run LLM-based matching** between resume + job description via `/analyze` (prompt → model → validated JSON)
 
-## Screenshots (lägg in dina egna länkar)
+## Screenshots (add your own links)
 
-> Byt ut länkarna nedan till dina riktiga bilder (GitHub assets, Imgur, etc).
+> Replace the links below with your real images (GitHub assets, Imgur, etc).
 
 - **Landing page**: `![Landing page](<ADD_LANDING_IMAGE_URL_HERE>)`
 - **Result page**: `![Result page](<ADD_RESULT_IMAGE_URL_HERE>)`
 
-## Arkitektur (kort)
+## Architecture (quick)
 
 ### Frontend (React / Vite)
 
-- Uploadar CV (PDF/DOC/DOCX) till API:t (`POST /parse`)
-- Visar **score** och **tips** på resultatvyn
+- Uploads a resume (PDF/DOC/DOCX) to the API (`POST /parse`)
+- Displays the **score** and **tips** on the result view
 
 ### Backend (FastAPI)
 
-Det finns två huvudflöden:
+There are two main flows:
 
-- **`POST /parse`**: tar emot en fil (multipart), extraherar text och normaliserar fält → beräknar **score + tips deterministiskt**
-- **`POST /analyze`**: tar emot `cv_text` + `job_text`, bygger en prompt, anropar **Ollama** och kräver att modellen svarar med **ren JSON** enligt schema
+- **`POST /parse`**: accepts a file (multipart), extracts text and normalizes fields → computes **score + tips deterministically**
+- **`POST /analyze`**: accepts `cv_text` + `job_text`, builds a prompt, calls **Ollama**, and requires the model to return **pure JSON** following a schema
 
 ## API: prompt → score pipeline (`/analyze`)
 
-Pipeline i korthet:
+Pipeline at a glance:
 
-- Vi bygger en prompt som tvingar modellen att svara med **giltig JSON**: `score (0–1000)`, `tips[]` och optional `analysis`.
-- API:t anropar Ollama på `POST /api/generate` med `model` från `OLLAMA_MODEL`.
-- Svaret **parsas som JSON** och valideras (score range, tips shape). Om output inte är korrekt returneras fel (`INVALID_MODEL_OUTPUT`).
+- The API builds a prompt that forces the model to respond with **valid JSON**: `score (0–1000)`, `tips[]`, and optional `analysis`.
+- The API calls Ollama at `POST /api/generate` with `model` from `OLLAMA_MODEL`.
+- The response is **parsed as JSON** and validated (score range, tip shape). If output is invalid, the API returns an error (`INVALID_MODEL_OUTPUT`).
 
-## Så tränade vi modellen (och datan)
+## Model training (and data)
 
-Det här är upplägget för modellen vi använde i projektet:
+This is the setup used for the model in this project:
 
-- **Data**: vi använde **syntetiskt genererad data** (syntetiska CV:n + jobbannonser + labels/tips) för att kunna iterera snabbt utan persondata.
-- **Träning**: gjordes i **Google Colab** för att få GPU.
-- **Finetuning**: med **Unsloth**.
-- **Basmodell** (som utgångspunkt):
+- **Data**: **synthetically generated data** (synthetic resumes + job descriptions + labels/tips) to iterate quickly without personal data.
+- **Training**: **Google Colab** (GPU).
+- **Fine-tuning**: **Unsloth**.
+- **Base model** (starting point):
 
 ```python
 model_name = "unsloth/Phi-3-mini-4k-instruct-bnb-4bit"
 ```
 
-Efter träning exporterade vi modellen och kör den lokalt via **Ollama** (för enklare inference + API-integration).
+After training, the model can be exported and run locally via **Ollama**
 
-> OBS: I koden styrs vilken modell som används av `OLLAMA_MODEL` (se `docker-compose.yml` och `api/src/config.py`). Byt den till din Ollama-tag när du lagt in modellen där.
+> Note: In the codebase, the model is selected by `OLLAMA_MODEL`
 
 ## Docker / Compose
 
-Allt körs i containrar med Docker Compose:
+Everything runs in containers via Docker Compose:
 
-- **`ollama`**: kör modellen (persistens via volume)
-- **`api`**: FastAPI (pratar med `ollama` över intern Docker-network)
+- **`ollama`**: runs the model (persistent volume)
+- **`api`**: FastAPI (talks to `ollama` over the internal Docker network)
 - **`client`**: Vite dev server
 
-Starta allt:
+Start everything:
 
 ```bash
 docker compose up --build
@@ -72,35 +72,8 @@ Endpoints:
 - **Ollama**: `http://localhost:11434`
 - **Client**: `http://localhost:5173`
 
-### Välj modell (Ollama)
 
-Kolla vilka modeller/tags som finns:
+## File formats
 
-```bash
-curl http://localhost:11434/api/tags
-```
-
-Om du behöver hämta en modell i containern:
-
-```bash
-docker compose exec ollama ollama pull <YOUR_MODEL_TAG_HERE>
-```
-
-## Testa API
-
-### `/parse` (fil-upload)
-
-Frontend använder `POST http://localhost:8000/parse` med multipart upload.
-
-### `/analyze` (CV text + jobbtext)
-
-```bash
-curl -X POST http://localhost:8000/analyze \
-  -H 'Content-Type: application/json' \
-  -d '{"cv_text":"my cv text","job_text":"my job text"}'
-```
-
-## Filformat
-
-- **`/parse`** stöder i praktiken **PDF + DOCX** (text extraheras med `pdfminer` och `python-docx`).
-- `.doc` är listat som accepterat i API:t, men själva parsern hanterar inte `.doc` (du behöver isåfall lägga till en extra extractor).
+- **`/parse`** effectively supports **PDF + DOCX** (text extraction via `pdfminer` and `python-docx`).
+- `.doc` is listed as allowed by the API, but the current parser does not handle `.doc` (you’d need to add an additional extractor).
