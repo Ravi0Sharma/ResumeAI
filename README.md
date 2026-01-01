@@ -1,14 +1,12 @@
 # ResumeAI
 
-ResumeAI is a fullstack project that analyzes resumes and returns a **score + actionable improvement tips**.
+ResumeAI analyzes resumes and returns a **score and actionable improvement tips**.
 The frontend is built with **React (Vite)** and the backend is a **FastAPI** server that can:
 
 - **Parse resume files** via `/parse` (deterministic scoring from extracted fields)
 - **Run LLM-based matching** between resume + job description via `/analyze` (prompt → model → validated JSON)
 
 ## Screenshots (add your own links)
-
-> Replace the links below with your real images (GitHub assets, Imgur, etc).
 
 - **Landing page**: `![Landing page](<ADD_LANDING_IMAGE_URL_HERE>)`
 - **Result page**: `![Result page](<ADD_RESULT_IMAGE_URL_HERE>)`
@@ -20,7 +18,7 @@ The frontend is built with **React (Vite)** and the backend is a **FastAPI** ser
 - Uploads a resume (PDF/DOC/DOCX) to the API (`POST /parse`)
 - Displays the **score** and **tips** on the result view
 
-### Backend (FastAPI)
+### Backend
 
 There are two main flows:
 
@@ -35,7 +33,7 @@ Pipeline at a glance:
 - The API calls Ollama at `POST /api/generate` with `model` from `OLLAMA_MODEL`.
 - The response is **parsed as JSON** and validated (score range, tip shape). If output is invalid, the API returns an error (`INVALID_MODEL_OUTPUT`).
 
-## Model training (and data)
+## Model training
 
 This is the setup used for the model in this project:
 
