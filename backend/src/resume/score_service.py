@@ -33,13 +33,13 @@ def score(normalized_resume: dict) -> tuple[int, list[dict]]:
     if not _has_str("name"):
         tips.append({"id": "name", "message": "Missing name", "severity": "NEEDS_WORK"})
     else:
-        tips.append({"id": "name_good", "message": "Name detected", "severity": "GOOD"})
+        tips.append({"id": "name_good", "message": "Clear name provided", "severity": "GOOD"})
     if not _has_str("email"):
         tips.append({"id": "email", "message": "Missing email", "severity": "NEEDS_WORK"})
     else:
-        tips.append({"id": "email_good", "message": "Email detected", "severity": "GOOD"})
+        tips.append({"id": "email_good", "message": "Professional email included", "severity": "GOOD"})
     if not _has_str("mobile_number"):
-        tips.append({"id": "mobile_number", "message": "Missing phone number", "severity": "NEEDS_WORK"})
+        tips.append({"id": "mobile_number", "message": "Phone number is missing", "severity": "NEEDS_WORK"})
     else:
         tips.append({"id": "mobile_number_good", "message": "Phone number detected", "severity": "GOOD"})
 
@@ -53,23 +53,29 @@ def score(normalized_resume: dict) -> tuple[int, list[dict]]:
             }
         )
     else:
-        tips.append({"id": "skills_good", "message": f"Good skills coverage (found {skills_count})", "severity": "GOOD"})
+        tips.append(
+            {
+                "id": "skills_good",
+                "message": f"Strong skills section ({skills_count} skills listed)",
+                "severity": "GOOD",
+            }
+        )
 
     degree_count = _count_list("degree")
     if degree_count == 0:
         tips.append({"id": "education", "message": "Education not detected", "severity": "WARNING"})
     else:
-        tips.append({"id": "education_good", "message": "Education detected", "severity": "GOOD"})
+        tips.append({"id": "education_good", "message": "Education section included", "severity": "GOOD"})
 
     company_count = _count_list("company_names")
     if company_count == 0:
         tips.append({"id": "experience", "message": "Work experience not detected", "severity": "WARNING"})
     else:
-        tips.append({"id": "experience_good", "message": "Work experience detected", "severity": "GOOD"})
+        tips.append({"id": "experience_good", "message": "Relevant work experience included", "severity": "GOOD"})
 
     total_experience = normalized_resume.get("total_experience")
     if total_experience is None:
-        tips.append({"id": "total_experience", "message": "Total experience not detected", "severity": "WARNING"})
+        tips.append({"id": "total_experience", "message": "Total years of experience not specified", "severity": "WARNING"})
     else:
         tips.append({"id": "total_experience_good", "message": "Total experience detected", "severity": "GOOD"})
 
