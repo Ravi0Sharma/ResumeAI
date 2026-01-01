@@ -5,6 +5,7 @@ def test_missing_sections_lower_score():
     missing = {}
     score_missing, _tips = score(missing)
     assert 0 <= score_missing <= 1000
+    assert all(t.get("severity") != "GOOD" for t in _tips)
 
 
 def test_full_resume_higher_score():
@@ -20,9 +21,10 @@ def test_full_resume_higher_score():
         "no_of_pages": 1,
     }
     score_missing, _ = score(missing)
-    score_full, _ = score(full)
+    score_full, tips_full = score(full)
     assert 0 <= score_full <= 1000
     assert score_full > score_missing
+    assert any(t.get("severity") == "GOOD" for t in tips_full)
 
 
 def test_score_clamped_0_1000():

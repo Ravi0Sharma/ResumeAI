@@ -32,10 +32,16 @@ def score(normalized_resume: dict) -> tuple[int, list[dict]]:
     # Presence checks
     if not _has_str("name"):
         tips.append({"id": "name", "message": "Missing name", "severity": "NEEDS_WORK"})
+    else:
+        tips.append({"id": "name_good", "message": "Name detected", "severity": "GOOD"})
     if not _has_str("email"):
         tips.append({"id": "email", "message": "Missing email", "severity": "NEEDS_WORK"})
+    else:
+        tips.append({"id": "email_good", "message": "Email detected", "severity": "GOOD"})
     if not _has_str("mobile_number"):
         tips.append({"id": "mobile_number", "message": "Missing phone number", "severity": "NEEDS_WORK"})
+    else:
+        tips.append({"id": "mobile_number_good", "message": "Phone number detected", "severity": "GOOD"})
 
     skills_count = _count_list("skills")
     if skills_count < 5:
@@ -46,22 +52,32 @@ def score(normalized_resume: dict) -> tuple[int, list[dict]]:
                 "severity": "WARNING" if skills_count >= 3 else "NEEDS_WORK",
             }
         )
+    else:
+        tips.append({"id": "skills_good", "message": f"Good skills coverage (found {skills_count})", "severity": "GOOD"})
 
     degree_count = _count_list("degree")
     if degree_count == 0:
         tips.append({"id": "education", "message": "Education not detected", "severity": "WARNING"})
+    else:
+        tips.append({"id": "education_good", "message": "Education detected", "severity": "GOOD"})
 
     company_count = _count_list("company_names")
     if company_count == 0:
         tips.append({"id": "experience", "message": "Work experience not detected", "severity": "WARNING"})
+    else:
+        tips.append({"id": "experience_good", "message": "Work experience detected", "severity": "GOOD"})
 
     total_experience = normalized_resume.get("total_experience")
     if total_experience is None:
         tips.append({"id": "total_experience", "message": "Total experience not detected", "severity": "WARNING"})
+    else:
+        tips.append({"id": "total_experience_good", "message": "Total experience detected", "severity": "GOOD"})
 
     pages = normalized_resume.get("no_of_pages")
     if isinstance(pages, int) and pages > 2:
         tips.append({"id": "length", "message": f"Resume is {pages} pages (consider shortening)", "severity": "WARNING"})
+    elif isinstance(pages, int) and pages <= 2:
+        tips.append({"id": "length_good", "message": f"Resume length looks good ({pages} pages)", "severity": "GOOD"})
 
     # Score is computed from field completeness + skills density.
     weights = {
