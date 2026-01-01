@@ -14,8 +14,6 @@ class Settings:
 
 def get_settings() -> Settings:
     """
-    Minimal config helper.
-
     Environment variables:
     - OLLAMA_URL (default: http://host.docker.internal:11434)
     - OLLAMA_MODEL (default: html-model:latest)

@@ -1,9 +1,3 @@
-"""Resume parser extracting text from PDF/DOCX and deriving simple fields.
-
-This module intentionally avoids PyResparser/spaCy (incompatible with Python 3.11 in many envs).
-The output is a best-effort dict compatible with the normalizer.
-"""
-
 from __future__ import annotations
 
 import re
