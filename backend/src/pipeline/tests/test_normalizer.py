@@ -1,7 +1,7 @@
 """Tests for the normalizer module."""
 
 import pytest
-from ..normalizer import normalize_extracted_data
+from backend.src.pipeline.normalizer import normalize_extracted_data
 
 
 def test_normalize_empty_data():
