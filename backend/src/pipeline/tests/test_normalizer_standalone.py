@@ -138,12 +138,12 @@ if __name__ == "__main__":
         test_normalize_experience_types()
         test_normalize_pages()
         test_normalize_types_exact()
-        print("\n✅ All tests passed!")
+        print("\n All tests passed!")
     except AssertionError as e:
-        print(f"\n❌ Test failed: {e}")
+        print(f"\n Test failed: {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n Error: {e}")
         sys.exit(1)
 
 
