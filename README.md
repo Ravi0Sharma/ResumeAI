@@ -81,3 +81,5 @@ Endpoints:
 ## File formats
 
 - **`/parse`** effectively supports **PDF + DOCX** (text extraction via `pdfminer` and `python-docx`).
+
+
