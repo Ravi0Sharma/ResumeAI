@@ -82,4 +82,7 @@ Endpoints:
 
 - **`/parse`** effectively supports **PDF + DOCX** (text extraction via `pdfminer` and `python-docx`).
 
+## Disclaimer
+This repository is built for learning and exploration.
+
 
