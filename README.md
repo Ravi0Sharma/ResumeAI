@@ -61,7 +61,7 @@ After training, the model can be exported and run locally via **Ollama**
 
 Everything runs in containers via Docker Compose:
 
-- **`ollama`**: runs the model (persistent volume)
+- **`ollama`**: runs the model
 - **`api`**: Talks to `ollama` over the internal Docker network
 - **`client`**: Vite dev server
 
